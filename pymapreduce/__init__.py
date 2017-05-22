@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import multiprocessing, sys, cPickle, os, datetime
+import multiprocessing, sys, pickle, os, datetime
 from multiprocessing.queues import SimpleQueue
 from tempfile import NamedTemporaryFile, TemporaryFile
 import heapq, itertools
@@ -70,7 +70,7 @@ class WC(Job):
         return (self.lc, self.wc, self.bc)
 
 def debug_print(s):
-    print >> sys.stderr, "[%s] (pid %u) %s" % (datetime.datetime.now().strftime('%H:%M:%S'),  os.getpid(), s)
+    print("[%s] (pid %u) %s" % (datetime.datetime.now().strftime('%H:%M:%S'),  os.getpid(), s), file=sys.stderr)
 
 class BaseRunner(object):
     STOP_MSG = "##STOP_MSG##"
@@ -167,7 +167,7 @@ class DiskBasedRunner(BaseMultiprocessingRunner):
         if self.debug:
             debug_print('Temp file %s' % f.name)
         for item in self.item_buffer:
-            cPickle.dump(item, f, cPickle.HIGHEST_PROTOCOL)
+            pickle.dump(item, f, pickle.HIGHEST_PROTOCOL)
         f.flush()
         self.map_opened_files.append(f)
         self.map_output_queue.put(f.name)
@@ -191,7 +191,7 @@ class DiskBasedRunner(BaseMultiprocessingRunner):
     def iter_on_file(self, stream):
         try:
             while True:
-                yield cPickle.load(stream)
+                yield pickle.load(stream)
         except EOFError:
             stream.close()
             if hasattr(stream, "name"): 
@@ -215,7 +215,7 @@ class DiskBasedRunner(BaseMultiprocessingRunner):
                 f = TemporaryFile()
                 self.merged_files.append(f)
                 for m in merged_iterator:
-                    cPickle.dump(m, f, cPickle.HIGHEST_PROTOCOL)
+                    pickle.dump(m, f, pickle.HIGHEST_PROTOCOL)
                 f.seek(0)
                 f.flush()
             else:
@@ -301,4 +301,4 @@ if __name__ == "__main__":
         runner.debug = True
         for argv in sys.argv[1:]:
             (lc, wc, bc) = runner.run(WC(argv))
-            print "(%s)\t%u\t%u\t%u\t%s" % (runner.__class__.__name__, lc, wc, bc, argv)
+            print("(%s)\t%u\t%u\t%u\t%s" % (runner.__class__.__name__, lc, wc, bc, argv))
